@@ -39,5 +39,33 @@ namespace RabbitMqAck.Test
 
             detector.Analyze(_output);
         }
+
+        [Theory]
+        [InlineData(2, 1, 1)]
+        [InlineData(2, 1, 100)]
+        [InlineData(2, 1, 10000)]
+        [InlineData(4, 10, 1)]
+        [InlineData(4, 10, 100)]
+        [InlineData(4, 10, 10000)]
+        [InlineData(8, 100, 1)]
+        [InlineData(8, 100, 100)]
+        [InlineData(8, 100, 10000)]
+        public async Task MultipleDetectorsAutoAck_SendMessage_PerfomanceEvaludated(int detectorCount, ushort prefetchCount, int messageCount)
+        {
+            var queueName = nameof(MultipleDetectorsAutoAck_SendMessage_PerfomanceEvaludated);
+
+            using var detector = new DetectorSuite<int>(detectorCount, queueName, false, prefetchCount, messageCount,
+                (data) => { },
+                (channel, args) => channel.BasicAck(args.DeliveryTag, false),
+                (channel, args) => channel.BasicReject(args.DeliveryTag, false)
+                );
+
+            using var sender = new RabbitMqSender(queueName);
+            sender.Send(Enumerable.Range(0, messageCount));
+
+            while (!detector.Finished) await Task.Delay(100);
+
+            detector.Analyze(_output);
+        }
     }
 }

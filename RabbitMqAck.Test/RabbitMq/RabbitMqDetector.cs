@@ -39,7 +39,8 @@ namespace RabbitMqAck.Test.RabbitMq
             _channel.BasicConsume(consumer, queueName, autoAck);
         }
 
-        public bool Finished => MessageCount <= 0;
+        public bool Finished => MessageCount <= ProcessedCount;
+        public int ProcessedCount { get; private set; }
         public int MessageCount { get; private set; }
         public Action<T> Processor { get; }
         public Action<IModel, BasicDeliverEventArgs> Ack { get; }
@@ -67,7 +68,7 @@ namespace RabbitMqAck.Test.RabbitMq
                 Actions.Add(new DetectorAction(args.DeliveryTag, "Before Rejcet", 6));
             }
 
-            MessageCount--;
+            ProcessedCount++;
             Actions.Add(new DetectorAction(args.DeliveryTag, "Message Handled", 7));
         }
 
